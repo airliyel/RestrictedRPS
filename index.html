@@ -3,23 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>한정 가위바위보 카드 카운터</title>
+  <title>한정 가위바위보 진행판</title>
   <style>
     :root {
       --bg: #0f1115;
       --panel: #191d24;
       --panel-hover: #222833;
+      --panel-strong: #262d38;
       --text: #f7f8fa;
       --muted: #9ba4b2;
       --border: rgba(255,255,255,0.11);
-      --danger: #ff6b6b;
-      --success: #67e8a5;
+      --danger: #ff7777;
+      --success: #6ee7a8;
     }
 
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     html, body {
       width: 100%;
@@ -37,196 +35,274 @@
       user-select: none;
     }
 
+    button { font: inherit; }
+
     .app {
       height: 100dvh;
+      padding: clamp(10px, 1.3vw, 20px);
       display: grid;
-      grid-template-rows: auto 1fr auto;
-      gap: clamp(10px, 1.5vh, 20px);
-      padding: clamp(14px, 2vw, 28px);
+      grid-template-rows: 1fr 1fr;
+      gap: clamp(10px, 1.2vh, 16px);
     }
 
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .title-wrap h1 {
-      margin: 0;
-      font-size: clamp(20px, 2.5vw, 38px);
-      letter-spacing: -0.04em;
-    }
-
-    .title-wrap p {
-      margin: 5px 0 0;
-      color: var(--muted);
-      font-size: clamp(12px, 1.2vw, 18px);
-    }
-
-    .remaining-total {
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .remaining-total .label {
-      display: block;
-      color: var(--muted);
-      font-size: clamp(11px, 1vw, 16px);
-    }
-
-    .remaining-total .value {
-      font-size: clamp(22px, 2.7vw, 42px);
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .cards {
+    .zone {
       min-height: 0;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: clamp(10px, 1.8vw, 24px);
+      grid-template-rows: auto 1fr;
+      gap: clamp(8px, 1vh, 12px);
     }
 
-    .card {
-      position: relative;
+    .score-zone {
+      border-top: 1px solid var(--border);
+      padding-top: clamp(8px, 1vh, 12px);
+    }
+
+    .section-head {
       min-width: 0;
-      border: 1px solid var(--border);
-      border-radius: clamp(18px, 2vw, 30px);
-      background: var(--panel);
-      color: var(--text);
-      cursor: pointer;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 18px 10px;
-      transition:
-        transform 80ms ease,
-        background 120ms ease,
-        border-color 120ms ease;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.22);
-    }
-
-    .card:hover {
-      background: var(--panel-hover);
-      border-color: rgba(255,255,255,0.20);
-    }
-
-    .card:active {
-      transform: scale(0.985);
-    }
-
-    .card:focus-visible,
-    .control:focus-visible {
-      outline: 3px solid rgba(255,255,255,0.65);
-      outline-offset: 3px;
-    }
-
-    .emoji {
-      font-size: clamp(62px, 8vw, 132px);
-      line-height: 1;
-      filter: drop-shadow(0 7px 12px rgba(0,0,0,0.3));
-    }
-
-    .name {
-      margin-top: clamp(8px, 1vh, 16px);
-      font-size: clamp(28px, 4vw, 64px);
-      font-weight: 800;
-      letter-spacing: -0.05em;
-    }
-
-    .count {
-      margin-top: clamp(8px, 1.4vh, 18px);
-      font-size: clamp(92px, 15vw, 250px);
-      font-weight: 900;
-      line-height: 0.9;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.06em;
-    }
-
-    .unit {
-      margin-top: clamp(8px, 1.2vh, 16px);
-      color: var(--muted);
-      font-size: clamp(16px, 1.6vw, 26px);
-      font-weight: 700;
-    }
-
-    .card.empty {
-      opacity: 0.42;
-      cursor: not-allowed;
-    }
-
-    .card.empty .count {
-      color: var(--danger);
-    }
-
-    .flash {
-      animation: flash 220ms ease;
-    }
-
-    @keyframes flash {
-      0% { background: var(--panel); }
-      50% { background: #2b3340; }
-      100% { background: var(--panel); }
-    }
-
-    footer {
-      display: flex;
       justify-content: space-between;
-      align-items: center;
       gap: 12px;
-      min-height: 46px;
     }
 
-    .hint {
+    .section-title {
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .section-title h1,
+    .section-title h2 {
+      margin: 0;
+      letter-spacing: -0.045em;
+      line-height: 1;
+    }
+
+    .section-title h1 { font-size: clamp(20px, 2vw, 34px); }
+    .section-title h2 { font-size: clamp(18px, 1.7vw, 29px); }
+
+    .summary {
       color: var(--muted);
       font-size: clamp(11px, 1vw, 15px);
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
-    .controls {
+    .summary strong {
+      color: var(--text);
+      font-size: 1.2em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .head-actions {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
     }
 
-    .control {
+    .small-btn {
+      min-height: 36px;
+      padding: 7px 11px;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 10px;
       background: #171b21;
       color: var(--text);
-      padding: 9px 14px;
-      font-size: 14px;
+      font-size: clamp(11px, .9vw, 14px);
       font-weight: 700;
       cursor: pointer;
     }
 
-    .control:hover {
-      background: #232933;
+    .small-btn:hover { background: var(--panel-hover); }
+    .small-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .small-btn.danger { color: #ffb0b0; }
+
+    .rps-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(8px, 1vw, 14px);
     }
 
-    .control:disabled {
-      opacity: 0.38;
-      cursor: not-allowed;
+    .rps-card {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--border);
+      border-radius: clamp(14px, 1.5vw, 24px);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: clamp(8px, 1.1vw, 18px);
+      padding: clamp(10px, 1.3vw, 20px);
+      transition: transform 80ms ease, background 120ms ease, border-color 120ms ease;
     }
 
-    .reset {
-      color: #ffb0b0;
+    .rps-card:hover {
+      background: var(--panel-hover);
+      border-color: rgba(255,255,255,.2);
+    }
+
+    .rps-card:active { transform: scale(.992); }
+    .rps-card.empty { opacity: .45; }
+    .rps-card.empty .rps-count { color: var(--danger); }
+
+    .rps-emoji { font-size: clamp(44px, 5.5vw, 92px); line-height: 1; }
+
+    .rps-info { min-width: 0; }
+
+    .rps-name {
+      font-size: clamp(22px, 2.6vw, 42px);
+      font-weight: 900;
+      letter-spacing: -.05em;
+      line-height: 1.05;
+    }
+
+    .rps-note {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: clamp(10px, .9vw, 14px);
+    }
+
+    .rps-count-wrap { text-align: right; }
+
+    .rps-count {
+      font-size: clamp(54px, 7.2vw, 118px);
+      font-weight: 950;
+      line-height: .85;
+      letter-spacing: -.06em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rps-unit {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: clamp(10px, .9vw, 14px);
+      font-weight: 700;
+    }
+
+    .flash { animation: flash 220ms ease; }
+
+    @keyframes flash {
+      0% { background: var(--panel); }
+      50% { background: #313947; }
+      100% { background: var(--panel); }
+    }
+
+    .score-board {
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: clamp(7px, .8vh, 10px);
+    }
+
+    .transfer-status {
+      min-height: 28px;
+      padding: 5px 10px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.035);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: clamp(11px, .95vw, 14px);
+      text-align: center;
+    }
+
+    .transfer-status strong { color: var(--text); }
+    .transfer-status .winner-text { color: var(--success); }
+    .transfer-status .loser-text { color: var(--danger); }
+
+    .teams-grid {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: clamp(6px, .8vw, 10px);
+    }
+
+    .team-card {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--border);
+      border-radius: clamp(10px, 1vw, 16px);
+      background: var(--panel);
+      padding: clamp(7px, .75vw, 11px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 4px;
+      transition: border-color 120ms ease, background 120ms ease;
+    }
+
+    .team-card.pending-winner {
+      border-color: rgba(110,231,168,.85);
+      background: rgba(110,231,168,.08);
+    }
+
+    .team-card.pending-loser {
+      border-color: rgba(255,119,119,.85);
+      background: rgba(255,119,119,.07);
+    }
+
+    .team-name {
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(12px, 1vw, 16px);
+      font-weight: 800;
+    }
+
+    .team-score {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(34px, 4.2vw, 70px);
+      line-height: .95;
+      font-weight: 950;
+      letter-spacing: -.055em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+    }
+
+    .score-btn {
+      min-width: 0;
+      min-height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #15191f;
+      color: var(--text);
+      font-size: clamp(14px, 1.15vw, 18px);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .score-btn:hover { background: var(--panel-hover); }
+    .score-btn.plus { color: var(--success); }
+    .score-btn.minus { color: var(--danger); }
+
+    .score-btn.selected {
+      background: var(--panel-strong);
+      border-color: currentColor;
     }
 
     .toast {
       position: fixed;
       left: 50%;
-      bottom: 82px;
+      bottom: 16px;
+      z-index: 10;
       transform: translateX(-50%) translateY(12px);
-      padding: 10px 16px;
+      padding: 9px 15px;
       border-radius: 999px;
-      background: rgba(0,0,0,0.78);
+      background: rgba(0,0,0,.86);
       color: white;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       opacity: 0;
       pointer-events: none;
@@ -238,92 +314,126 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    @media (max-width: 760px) {
-      body {
-        overflow: auto;
-      }
+    button:focus-visible {
+      outline: 3px solid rgba(255,255,255,.7);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
 
       .app {
-        min-height: 100dvh;
         height: auto;
+        min-height: 100dvh;
+        grid-template-rows: auto auto;
       }
 
-      .cards {
-        grid-template-columns: 1fr;
-      }
+      .rps-grid { grid-template-columns: 1fr; }
+      .rps-card { min-height: 130px; }
 
-      .card {
-        min-height: 270px;
+      .teams-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: none;
       }
+    }
 
-      footer {
+    @media (max-width: 520px) {
+      .section-head {
+        align-items: flex-start;
         flex-direction: column;
-        align-items: stretch;
       }
 
-      .hint {
-        text-align: center;
-      }
-
-      .controls {
-        justify-content: center;
-      }
+      .head-actions { width: 100%; }
+      .small-btn { flex: 1; }
+      .teams-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <header>
-      <div class="title-wrap">
-        <h1>한정 가위바위보</h1>
-        <p>사용된 카드를 눌러 잔여 수량을 차감하세요.</p>
+    <section class="zone card-zone">
+      <div class="section-head">
+        <div class="section-title">
+          <h1>한정 가위바위보</h1>
+          <div class="summary">잔여 <strong id="total-count">90</strong> / 90장</div>
+        </div>
+        <div class="head-actions">
+          <button class="small-btn" id="card-undo-btn" type="button">↶ 카드 되돌리기</button>
+          <button class="small-btn danger" id="card-reset-btn" type="button">카드 초기화</button>
+        </div>
       </div>
 
-      <div class="remaining-total" aria-live="polite">
-        <span class="label">전체 잔여 카드</span>
-        <span class="value"><span id="total-count">90</span> / 90</span>
+      <div class="rps-grid">
+        <button class="rps-card" id="scissors-card" data-type="scissors" type="button">
+          <div class="rps-emoji">✌️</div>
+          <div class="rps-info">
+            <div class="rps-name">가위</div>
+            <div class="rps-note">클릭 또는 1</div>
+          </div>
+          <div class="rps-count-wrap">
+            <div class="rps-count" id="scissors-count">30</div>
+            <div class="rps-unit">장 남음</div>
+          </div>
+        </button>
+
+        <button class="rps-card" id="rock-card" data-type="rock" type="button">
+          <div class="rps-emoji">✊</div>
+          <div class="rps-info">
+            <div class="rps-name">바위</div>
+            <div class="rps-note">클릭 또는 2</div>
+          </div>
+          <div class="rps-count-wrap">
+            <div class="rps-count" id="rock-count">30</div>
+            <div class="rps-unit">장 남음</div>
+          </div>
+        </button>
+
+        <button class="rps-card" id="paper-card" data-type="paper" type="button">
+          <div class="rps-emoji">✋</div>
+          <div class="rps-info">
+            <div class="rps-name">보</div>
+            <div class="rps-note">클릭 또는 3</div>
+          </div>
+          <div class="rps-count-wrap">
+            <div class="rps-count" id="paper-count">30</div>
+            <div class="rps-unit">장 남음</div>
+          </div>
+        </button>
       </div>
-    </header>
-
-    <section class="cards" aria-label="잔여 카드">
-      <button class="card" id="scissors-card" data-type="scissors" aria-label="가위 카드 1장 사용">
-        <div class="emoji" aria-hidden="true">✌️</div>
-        <div class="name">가위</div>
-        <div class="count" id="scissors-count">30</div>
-        <div class="unit">장 남음</div>
-      </button>
-
-      <button class="card" id="rock-card" data-type="rock" aria-label="바위 카드 1장 사용">
-        <div class="emoji" aria-hidden="true">✊</div>
-        <div class="name">바위</div>
-        <div class="count" id="rock-count">30</div>
-        <div class="unit">장 남음</div>
-      </button>
-
-      <button class="card" id="paper-card" data-type="paper" aria-label="보 카드 1장 사용">
-        <div class="emoji" aria-hidden="true">✋</div>
-        <div class="name">보</div>
-        <div class="count" id="paper-count">30</div>
-        <div class="unit">장 남음</div>
-      </button>
     </section>
 
-    <footer>
-      <div class="hint">
-        키보드: 1 가위 · 2 바위 · 3 보 · Z 되돌리기 · F 전체화면
+    <section class="zone score-zone">
+      <div class="section-head">
+        <div class="section-title">
+          <h2>점수 현황</h2>
+          <div class="summary">총점 <strong id="score-total">50</strong> · 시작 5점씩</div>
+        </div>
+        <div class="head-actions">
+          <button class="small-btn" id="score-undo-btn" type="button">↶ 점수 되돌리기</button>
+          <button class="small-btn danger" id="score-reset-btn" type="button">점수 초기화</button>
+        </div>
       </div>
-      <div class="controls">
-        <button class="control" id="undo-btn" type="button">↶ 되돌리기</button>
-        <button class="control reset" id="reset-btn" type="button">전체 초기화</button>
+
+      <div class="score-board">
+        <div class="transfer-status" id="transfer-status" aria-live="polite">
+          승리 팀의 <strong class="winner-text">+1</strong>과 패배 팀의
+          <strong class="loser-text">−1</strong>을 누르면 1점이 이동합니다.
+          무승부는 아무 조작도 하지 않습니다.
+        </div>
+        <div class="teams-grid" id="teams-grid"></div>
       </div>
-    </footer>
+    </section>
   </main>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="toast" id="toast"></div>
 
   <script>
-    const INITIAL_COUNT = 30;
-    const STORAGE_KEY = "limited-rps-counter-v1";
+    const CARD_INITIAL = 30;
+    const TEAM_COUNT = 10;
+    const SCORE_INITIAL = 5;
+    const SCORE_TOTAL = TEAM_COUNT * SCORE_INITIAL;
+    const STORAGE_KEY = "restricted-rps-state-v2";
+    const LEGACY_STORAGE_KEY = "limited-rps-counter-v1";
 
     const labels = {
       scissors: "가위",
@@ -332,150 +442,373 @@
     };
 
     let state = {
-      scissors: INITIAL_COUNT,
-      rock: INITIAL_COUNT,
-      paper: INITIAL_COUNT,
-      history: []
+      cards: {
+        scissors: CARD_INITIAL,
+        rock: CARD_INITIAL,
+        paper: CARD_INITIAL
+      },
+      scores: Array(TEAM_COUNT).fill(SCORE_INITIAL),
+      cardHistory: [],
+      scoreHistory: [],
+      pendingWinner: null,
+      pendingLoser: null
     };
 
     const totalEl = document.getElementById("total-count");
-    const undoBtn = document.getElementById("undo-btn");
-    const resetBtn = document.getElementById("reset-btn");
+    const scoreTotalEl = document.getElementById("score-total");
+    const teamsGrid = document.getElementById("teams-grid");
+    const transferStatus = document.getElementById("transfer-status");
+    const cardUndoBtn = document.getElementById("card-undo-btn");
+    const cardResetBtn = document.getElementById("card-reset-btn");
+    const scoreUndoBtn = document.getElementById("score-undo-btn");
+    const scoreResetBtn = document.getElementById("score-reset-btn");
     const toastEl = document.getElementById("toast");
+
+    function validCardCount(value) {
+      return Number.isInteger(value) && value >= 0 && value <= CARD_INITIAL;
+    }
+
+    function validScores(scores) {
+      return Array.isArray(scores) &&
+        scores.length === TEAM_COUNT &&
+        scores.every(value => Number.isInteger(value) && value >= 0) &&
+        scores.reduce((sum, value) => sum + value, 0) === SCORE_TOTAL;
+    }
 
     function loadState() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
         if (
           saved &&
-          ["scissors", "rock", "paper"].every(
-            key => Number.isInteger(saved[key]) &&
-                   saved[key] >= 0 &&
-                   saved[key] <= INITIAL_COUNT
-          )
+          saved.cards &&
+          validCardCount(saved.cards.scissors) &&
+          validCardCount(saved.cards.rock) &&
+          validCardCount(saved.cards.paper) &&
+          validScores(saved.scores)
         ) {
-          state.scissors = saved.scissors;
-          state.rock = saved.rock;
-          state.paper = saved.paper;
-          state.history = Array.isArray(saved.history) ? saved.history : [];
+          state.cards = { ...saved.cards };
+          state.scores = saved.scores.slice();
+          state.cardHistory = Array.isArray(saved.cardHistory) ? saved.cardHistory : [];
+          state.scoreHistory = Array.isArray(saved.scoreHistory) ? saved.scoreHistory : [];
+          return;
         }
-      } catch (_) {
-        // 저장 데이터가 깨졌다면 초기값 사용
-      }
+
+        const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY));
+        if (
+          legacy &&
+          validCardCount(legacy.scissors) &&
+          validCardCount(legacy.rock) &&
+          validCardCount(legacy.paper)
+        ) {
+          state.cards.scissors = legacy.scissors;
+          state.cards.rock = legacy.rock;
+          state.cards.paper = legacy.paper;
+          state.cardHistory = Array.isArray(legacy.history) ? legacy.history : [];
+        }
+      } catch (_) {}
     }
 
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        cards: state.cards,
+        scores: state.scores,
+        cardHistory: state.cardHistory,
+        scoreHistory: state.scoreHistory
+      }));
+    }
+
+    function createTeamCards() {
+      teamsGrid.innerHTML = "";
+
+      for (let i = 0; i < TEAM_COUNT; i += 1) {
+        const card = document.createElement("article");
+        card.className = "team-card";
+        card.id = "team-card-" + i;
+
+        const name = document.createElement("div");
+        name.className = "team-name";
+        name.textContent = (i + 1) + "팀";
+
+        const score = document.createElement("div");
+        score.className = "team-score";
+        score.id = "team-score-" + i;
+        score.textContent = SCORE_INITIAL;
+
+        const buttons = document.createElement("div");
+        buttons.className = "score-buttons";
+
+        const minus = document.createElement("button");
+        minus.type = "button";
+        minus.className = "score-btn minus";
+        minus.dataset.team = String(i);
+        minus.dataset.role = "loser";
+        minus.textContent = "−1";
+
+        const plus = document.createElement("button");
+        plus.type = "button";
+        plus.className = "score-btn plus";
+        plus.dataset.team = String(i);
+        plus.dataset.role = "winner";
+        plus.textContent = "+1";
+
+        buttons.appendChild(minus);
+        buttons.appendChild(plus);
+
+        card.appendChild(name);
+        card.appendChild(score);
+        card.appendChild(buttons);
+
+        teamsGrid.appendChild(card);
+      }
+    }
+
+    function renderCards() {
+      ["scissors", "rock", "paper"].forEach(type => {
+        const countEl = document.getElementById(type + "-count");
+        const cardEl = document.getElementById(type + "-card");
+
+        countEl.textContent = state.cards[type];
+        cardEl.classList.toggle("empty", state.cards[type] === 0);
+      });
+
+      totalEl.textContent =
+        state.cards.scissors + state.cards.rock + state.cards.paper;
+
+      cardUndoBtn.disabled = state.cardHistory.length === 0;
+    }
+
+    function renderScores() {
+      let total = 0;
+
+      state.scores.forEach((score, index) => {
+        total += score;
+
+        const scoreEl = document.getElementById("team-score-" + index);
+        const cardEl = document.getElementById("team-card-" + index);
+        const plusBtn = cardEl.querySelector('[data-role="winner"]');
+        const minusBtn = cardEl.querySelector('[data-role="loser"]');
+
+        scoreEl.textContent = score;
+        cardEl.classList.toggle("pending-winner", state.pendingWinner === index);
+        cardEl.classList.toggle("pending-loser", state.pendingLoser === index);
+        plusBtn.classList.toggle("selected", state.pendingWinner === index);
+        minusBtn.classList.toggle("selected", state.pendingLoser === index);
+      });
+
+      scoreTotalEl.textContent = total;
+      scoreUndoBtn.disabled = state.scoreHistory.length === 0;
+
+      if (state.pendingWinner !== null && state.pendingLoser === null) {
+        transferStatus.innerHTML =
+          '<strong class="winner-text">' +
+          (state.pendingWinner + 1) +
+          '팀 +1</strong> 선택됨 · 점수를 줄 팀의 <strong class="loser-text">−1</strong>을 누르세요.';
+      } else if (state.pendingLoser !== null && state.pendingWinner === null) {
+        transferStatus.innerHTML =
+          '<strong class="loser-text">' +
+          (state.pendingLoser + 1) +
+          '팀 −1</strong> 선택됨 · 점수를 받을 팀의 <strong class="winner-text">+1</strong>을 누르세요.';
+      } else {
+        transferStatus.innerHTML =
+          '승리 팀의 <strong class="winner-text">+1</strong>과 패배 팀의 ' +
+          '<strong class="loser-text">−1</strong>을 누르면 1점이 이동합니다. ' +
+          '무승부는 아무 조작도 하지 않습니다.';
+      }
     }
 
     function render() {
-      for (const type of ["scissors", "rock", "paper"]) {
-        const countEl = document.getElementById(`${type}-count`);
-        const cardEl = document.getElementById(`${type}-card`);
-        countEl.textContent = state[type];
-        cardEl.classList.toggle("empty", state[type] === 0);
-        cardEl.setAttribute("aria-disabled", state[type] === 0 ? "true" : "false");
-      }
-
-      totalEl.textContent = state.scissors + state.rock + state.paper;
-      undoBtn.disabled = state.history.length === 0;
+      renderCards();
+      renderScores();
     }
 
     function flashCard(type) {
-      const card = document.getElementById(`${type}-card`);
+      const card = document.getElementById(type + "-card");
       card.classList.remove("flash");
       void card.offsetWidth;
       card.classList.add("flash");
     }
 
     let toastTimer;
+
     function showToast(message) {
       toastEl.textContent = message;
       toastEl.classList.add("show");
+
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => {
         toastEl.classList.remove("show");
-      }, 1000);
+      }, 1200);
     }
 
     function useCard(type) {
-      if (state[type] <= 0) {
-        showToast(`${labels[type]} 카드가 모두 소진되었습니다.`);
+      if (state.cards[type] <= 0) {
+        showToast(labels[type] + " 카드가 모두 소진되었습니다.");
         return;
       }
 
-      state[type] -= 1;
-      state.history.push(type);
-
-      // 기록이 지나치게 커질 필요는 없음
-      if (state.history.length > 200) {
-        state.history.shift();
-      }
+      state.cards[type] -= 1;
+      state.cardHistory.push(type);
 
       saveState();
-      render();
+      renderCards();
       flashCard(type);
     }
 
-    function undo() {
-      const type = state.history.pop();
+    function undoCard() {
+      const type = state.cardHistory.pop();
       if (!type) return;
 
-      if (state[type] < INITIAL_COUNT) {
-        state[type] += 1;
+      if (state.cards[type] < CARD_INITIAL) {
+        state.cards[type] += 1;
       }
 
       saveState();
-      render();
-      showToast(`${labels[type]} 1장을 복구했습니다.`);
+      renderCards();
+      showToast(labels[type] + " 카드 1장을 복구했습니다.");
     }
 
-    function resetAll() {
-      const ok = window.confirm("모든 카드 수량을 30장으로 초기화할까요?");
-      if (!ok) return;
+    function resetCards() {
+      if (!window.confirm("가위·바위·보 카드 수량을 모두 30장으로 초기화할까요?")) {
+        return;
+      }
 
-      state = {
-        scissors: INITIAL_COUNT,
-        rock: INITIAL_COUNT,
-        paper: INITIAL_COUNT,
-        history: []
+      state.cards = {
+        scissors: CARD_INITIAL,
+        rock: CARD_INITIAL,
+        paper: CARD_INITIAL
       };
 
+      state.cardHistory = [];
+
       saveState();
-      render();
-      showToast("전체 수량을 초기화했습니다.");
+      renderCards();
+      showToast("카드 수량을 초기화했습니다.");
     }
 
-    async function toggleFullscreen() {
-      try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
+    function chooseScoreRole(teamIndex, role) {
+      if (role === "winner") {
+        if (state.pendingWinner === teamIndex) {
+          state.pendingWinner = null;
         } else {
-          await document.exitFullscreen();
+          if (state.pendingLoser === teamIndex) {
+            state.pendingLoser = null;
+          }
+          state.pendingWinner = teamIndex;
         }
-      } catch (_) {
-        showToast("브라우저에서 전체화면을 허용하지 않았습니다.");
+      } else {
+        if (state.pendingLoser === teamIndex) {
+          state.pendingLoser = null;
+        } else {
+          if (state.pendingWinner === teamIndex) {
+            state.pendingWinner = null;
+          }
+          state.pendingLoser = teamIndex;
+        }
+      }
+
+      if (state.pendingWinner !== null && state.pendingLoser !== null) {
+        transferPoint();
+      } else {
+        renderScores();
       }
     }
 
-    document.querySelectorAll(".card").forEach(card => {
-      card.addEventListener("click", () => useCard(card.dataset.type));
+    function transferPoint() {
+      const winner = state.pendingWinner;
+      const loser = state.pendingLoser;
+
+      if (winner === loser) {
+        state.pendingWinner = null;
+        state.pendingLoser = null;
+        renderScores();
+        showToast("같은 팀끼리는 점수를 이동할 수 없습니다.");
+        return;
+      }
+
+      if (state.scores[loser] <= 0) {
+        state.pendingLoser = null;
+        renderScores();
+        showToast((loser + 1) + "팀은 0점이라 더 이상 점수를 줄 수 없습니다.");
+        return;
+      }
+
+      state.scores[winner] += 1;
+      state.scores[loser] -= 1;
+
+      state.scoreHistory.push({ winner, loser });
+
+      state.pendingWinner = null;
+      state.pendingLoser = null;
+
+      saveState();
+      renderScores();
+
+      showToast(
+        (loser + 1) + "팀 → " + (winner + 1) + "팀, 1점 이동"
+      );
+    }
+
+    function undoScore() {
+      const last = state.scoreHistory.pop();
+      if (!last) return;
+
+      state.scores[last.winner] -= 1;
+      state.scores[last.loser] += 1;
+
+      state.pendingWinner = null;
+      state.pendingLoser = null;
+
+      saveState();
+      renderScores();
+      showToast("최근 점수 이동을 되돌렸습니다.");
+    }
+
+    function resetScores() {
+      if (!window.confirm("10팀의 점수를 모두 5점으로 초기화할까요?")) {
+        return;
+      }
+
+      state.scores = Array(TEAM_COUNT).fill(SCORE_INITIAL);
+      state.scoreHistory = [];
+      state.pendingWinner = null;
+      state.pendingLoser = null;
+
+      saveState();
+      renderScores();
+      showToast("점수를 모두 5점으로 초기화했습니다.");
+    }
+
+    document.querySelectorAll(".rps-card").forEach(card => {
+      card.addEventListener("click", () => {
+        useCard(card.dataset.type);
+      });
     });
 
-    undoBtn.addEventListener("click", undo);
-    resetBtn.addEventListener("click", resetAll);
+    teamsGrid.addEventListener("click", event => {
+      const button = event.target.closest(".score-btn");
+      if (!button) return;
+
+      const teamIndex = Number(button.dataset.team);
+      const role = button.dataset.role;
+
+      chooseScoreRole(teamIndex, role);
+    });
+
+    cardUndoBtn.addEventListener("click", undoCard);
+    cardResetBtn.addEventListener("click", resetCards);
+    scoreUndoBtn.addEventListener("click", undoScore);
+    scoreResetBtn.addEventListener("click", resetScores);
 
     document.addEventListener("keydown", event => {
       if (event.repeat) return;
 
-      const key = event.key.toLowerCase();
-      if (key === "1") useCard("scissors");
-      if (key === "2") useCard("rock");
-      if (key === "3") useCard("paper");
-      if (key === "z") undo();
-      if (key === "f") toggleFullscreen();
+      if (event.key === "1") useCard("scissors");
+      if (event.key === "2") useCard("rock");
+      if (event.key === "3") useCard("paper");
     });
 
+    createTeamCards();
     loadState();
     render();
   </script>
