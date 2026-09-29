@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>한정 가위바위보 카드 카운터</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #191d24;
+      --panel-hover: #222833;
+      --text: #f7f8fa;
+      --muted: #9ba4b2;
+      --border: rgba(255,255,255,0.11);
+      --danger: #ff6b6b;
+      --success: #67e8a5;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        Pretendard, "Noto Sans KR", "Apple SD Gothic Neo",
+        "Malgun Gothic", system-ui, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .app {
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: clamp(10px, 1.5vh, 20px);
+      padding: clamp(14px, 2vw, 28px);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: clamp(20px, 2.5vw, 38px);
+      letter-spacing: -0.04em;
+    }
+
+    .title-wrap p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: clamp(12px, 1.2vw, 18px);
+    }
+
+    .remaining-total {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .remaining-total .label {
+      display: block;
+      color: var(--muted);
+      font-size: clamp(11px, 1vw, 16px);
+    }
+
+    .remaining-total .value {
+      font-size: clamp(22px, 2.7vw, 42px);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cards {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(10px, 1.8vw, 24px);
+    }
+
+    .card {
+      position: relative;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: clamp(18px, 2vw, 30px);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 10px;
+      transition:
+        transform 80ms ease,
+        background 120ms ease,
+        border-color 120ms ease;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.22);
+    }
+
+    .card:hover {
+      background: var(--panel-hover);
+      border-color: rgba(255,255,255,0.20);
+    }
+
+    .card:active {
+      transform: scale(0.985);
+    }
+
+    .card:focus-visible,
+    .control:focus-visible {
+      outline: 3px solid rgba(255,255,255,0.65);
+      outline-offset: 3px;
+    }
+
+    .emoji {
+      font-size: clamp(62px, 8vw, 132px);
+      line-height: 1;
+      filter: drop-shadow(0 7px 12px rgba(0,0,0,0.3));
+    }
+
+    .name {
+      margin-top: clamp(8px, 1vh, 16px);
+      font-size: clamp(28px, 4vw, 64px);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+    }
+
+    .count {
+      margin-top: clamp(8px, 1.4vh, 18px);
+      font-size: clamp(92px, 15vw, 250px);
+      font-weight: 900;
+      line-height: 0.9;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.06em;
+    }
+
+    .unit {
+      margin-top: clamp(8px, 1.2vh, 16px);
+      color: var(--muted);
+      font-size: clamp(16px, 1.6vw, 26px);
+      font-weight: 700;
+    }
+
+    .card.empty {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .card.empty .count {
+      color: var(--danger);
+    }
+
+    .flash {
+      animation: flash 220ms ease;
+    }
+
+    @keyframes flash {
+      0% { background: var(--panel); }
+      50% { background: #2b3340; }
+      100% { background: var(--panel); }
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      min-height: 46px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: clamp(11px, 1vw, 15px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .control {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #171b21;
+      color: var(--text);
+      padding: 9px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .control:hover {
+      background: #232933;
+    }
+
+    .control:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    .reset {
+      color: #ffb0b0;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 82px;
+      transform: translateX(-50%) translateY(12px);
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.78);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        min-height: 100dvh;
+        height: auto;
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        min-height: 270px;
+      }
+
+      footer {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .hint {
+        text-align: center;
+      }
+
+      .controls {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="title-wrap">
+        <h1>한정 가위바위보</h1>
+        <p>사용된 카드를 눌러 잔여 수량을 차감하세요.</p>
+      </div>
+
+      <div class="remaining-total" aria-live="polite">
+        <span class="label">전체 잔여 카드</span>
+        <span class="value"><span id="total-count">90</span> / 90</span>
+      </div>
+    </header>
+
+    <section class="cards" aria-label="잔여 카드">
+      <button class="card" id="scissors-card" data-type="scissors" aria-label="가위 카드 1장 사용">
+        <div class="emoji" aria-hidden="true">✌️</div>
+        <div class="name">가위</div>
+        <div class="count" id="scissors-count">30</div>
+        <div class="unit">장 남음</div>
+      </button>
+
+      <button class="card" id="rock-card" data-type="rock" aria-label="바위 카드 1장 사용">
+        <div class="emoji" aria-hidden="true">✊</div>
+        <div class="name">바위</div>
+        <div class="count" id="rock-count">30</div>
+        <div class="unit">장 남음</div>
+      </button>
+
+      <button class="card" id="paper-card" data-type="paper" aria-label="보 카드 1장 사용">
+        <div class="emoji" aria-hidden="true">✋</div>
+        <div class="name">보</div>
+        <div class="count" id="paper-count">30</div>
+        <div class="unit">장 남음</div>
+      </button>
+    </section>
+
+    <footer>
+      <div class="hint">
+        키보드: 1 가위 · 2 바위 · 3 보 · Z 되돌리기 · F 전체화면
+      </div>
+      <div class="controls">
+        <button class="control" id="undo-btn" type="button">↶ 되돌리기</button>
+        <button class="control reset" id="reset-btn" type="button">전체 초기화</button>
+      </div>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const INITIAL_COUNT = 30;
+    const STORAGE_KEY = "limited-rps-counter-v1";
+
+    const labels = {
+      scissors: "가위",
+      rock: "바위",
+      paper: "보"
+    };
+
+    let state = {
+      scissors: INITIAL_COUNT,
+      rock: INITIAL_COUNT,
+      paper: INITIAL_COUNT,
+      history: []
+    };
+
+    const totalEl = document.getElementById("total-count");
+    const undoBtn = document.getElementById("undo-btn");
+    const resetBtn = document.getElementById("reset-btn");
+    const toastEl = document.getElementById("toast");
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (
+          saved &&
+          ["scissors", "rock", "paper"].every(
+            key => Number.isInteger(saved[key]) &&
+                   saved[key] >= 0 &&
+                   saved[key] <= INITIAL_COUNT
+          )
+        ) {
+          state.scissors = saved.scissors;
+          state.rock = saved.rock;
+          state.paper = saved.paper;
+          state.history = Array.isArray(saved.history) ? saved.history : [];
+        }
+      } catch (_) {
+        // 저장 데이터가 깨졌다면 초기값 사용
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function render() {
+      for (const type of ["scissors", "rock", "paper"]) {
+        const countEl = document.getElementById(`${type}-count`);
+        const cardEl = document.getElementById(`${type}-card`);
+        countEl.textContent = state[type];
+        cardEl.classList.toggle("empty", state[type] === 0);
+        cardEl.setAttribute("aria-disabled", state[type] === 0 ? "true" : "false");
+      }
+
+      totalEl.textContent = state.scissors + state.rock + state.paper;
+      undoBtn.disabled = state.history.length === 0;
+    }
+
+    function flashCard(type) {
+      const card = document.getElementById(`${type}-card`);
+      card.classList.remove("flash");
+      void card.offsetWidth;
+      card.classList.add("flash");
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.classList.remove("show");
+      }, 1000);
+    }
+
+    function useCard(type) {
+      if (state[type] <= 0) {
+        showToast(`${labels[type]} 카드가 모두 소진되었습니다.`);
+        return;
+      }
+
+      state[type] -= 1;
+      state.history.push(type);
+
+      // 기록이 지나치게 커질 필요는 없음
+      if (state.history.length > 200) {
+        state.history.shift();
+      }
+
+      saveState();
+      render();
+      flashCard(type);
+    }
+
+    function undo() {
+      const type = state.history.pop();
+      if (!type) return;
+
+      if (state[type] < INITIAL_COUNT) {
+        state[type] += 1;
+      }
+
+      saveState();
+      render();
+      showToast(`${labels[type]} 1장을 복구했습니다.`);
+    }
+
+    function resetAll() {
+      const ok = window.confirm("모든 카드 수량을 30장으로 초기화할까요?");
+      if (!ok) return;
+
+      state = {
+        scissors: INITIAL_COUNT,
+        rock: INITIAL_COUNT,
+        paper: INITIAL_COUNT,
+        history: []
+      };
+
+      saveState();
+      render();
+      showToast("전체 수량을 초기화했습니다.");
+    }
+
+    async function toggleFullscreen() {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch (_) {
+        showToast("브라우저에서 전체화면을 허용하지 않았습니다.");
+      }
+    }
+
+    document.querySelectorAll(".card").forEach(card => {
+      card.addEventListener("click", () => useCard(card.dataset.type));
+    });
+
+    undoBtn.addEventListener("click", undo);
+    resetBtn.addEventListener("click", resetAll);
+
+    document.addEventListener("keydown", event => {
+      if (event.repeat) return;
+
+      const key = event.key.toLowerCase();
+      if (key === "1") useCard("scissors");
+      if (key === "2") useCard("rock");
+      if (key === "3") useCard("paper");
+      if (key === "z") undo();
+      if (key === "f") toggleFullscreen();
+    });
+
+    loadState();
+    render();
+  </script>
+</body>
+</html>
